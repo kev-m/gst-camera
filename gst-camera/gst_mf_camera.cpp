@@ -62,8 +62,6 @@
 #  include <config.h>
 #endif
 
-  // Debugging
-#include <stdio.h>
 
 // #include <gst/gst.h> Moved to pch.h
 
@@ -123,9 +121,6 @@ static GstFlowReturn gst_mfcamera_chain(GstPad* pad,
 static void
 gst_mfcamera_class_init(GstmfcameraClass* klass)
 {
-    // Debugging
-    printf("Here!!");
-
     GObjectClass* gobject_class;
     GstElementClass* gstelement_class;
 
@@ -141,11 +136,12 @@ gst_mfcamera_class_init(GstmfcameraClass* klass)
 
     gst_element_class_set_details_simple(gstelement_class,
         "mfcamera",
-        "FIXME:Generic",
-        "FIXME:Generic Template Element", " <<user@hostname.org>>");
+        "WMF Virtual Camera",                    // Classification
+		"A gstreamer plugin that forwards to a Windows Media Foundation virtual camera",   // Description
+		" <<kevin@kmz.co.za>>");		    // Author
 
-    //gst_element_class_add_pad_template(gstelement_class,
-    //    gst_static_pad_template_get(&src_factory));
+    gst_element_class_add_pad_template(gstelement_class,
+        gst_static_pad_template_get(&src_factory));
     gst_element_class_add_pad_template(gstelement_class,
         gst_static_pad_template_get(&sink_factory));
 }
@@ -166,9 +162,9 @@ gst_mfcamera_init(Gstmfcamera* filter)
     GST_PAD_SET_PROXY_CAPS(filter->sinkpad);
     gst_element_add_pad(GST_ELEMENT(filter), filter->sinkpad);
 
-    //filter->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
-    //GST_PAD_SET_PROXY_CAPS(filter->srcpad);
-    //gst_element_add_pad(GST_ELEMENT(filter), filter->srcpad);
+    filter->srcpad = gst_pad_new_from_static_template(&src_factory, "src");
+    GST_PAD_SET_PROXY_CAPS(filter->srcpad);
+    gst_element_add_pad(GST_ELEMENT(filter), filter->srcpad);
 
     filter->silent = FALSE;
 }
@@ -252,7 +248,18 @@ gst_mfcamera_chain(GstPad* pad, GstObject* parent, GstBuffer* buf)
     if (filter->silent == FALSE)
         g_print("I'm plugged, therefore I'm in.\n");
 
+    // TODO: Push the data to the Media Foundation sink
+
+
     /* just push out the incoming buffer without touching it */
+	// TODO Only push if the srcpad is connected in the pipeline
+	//if (filter->srcpad != NULL)
+	//{
+    //  if (filter->silent == FALSE)
+    //      g_print("I'm forwarding...\n");
+    //  return gst_pad_push(filter->srcpad, buf);
+	//}
+
     return GST_FLOW_OK; // gst_pad_push(filter->srcpad, buf);
 }
 
@@ -296,3 +303,4 @@ GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
 
 // gst-launch-1.0.exe -v mfvideosrc ! video/x-raw, format=NV12, width=800, height=600, framerate=30/1, pixel-aspect-ratio=1/1 ! queue ! mf_camera
 // gst-launch-1.0.exe -v -m fakesrc ! mf_camera
+// gst-launch-1.0.exe -v -m fakesrc ! mf_camera silent=TRUE
