@@ -56,6 +56,10 @@ G_BEGIN_DECLS
 #define GST_PACKAGE_NAME    "mf_camera"
 #define GST_PACKAGE_ORIGIN  "https://kmz.co.za/"
 
+#define PL_CLASS "WMF Virtual Camera"
+#define GL_DESCRIPTION "A gstreamer plugin that forwards to a Windows Media Foundation virtual camera."
+
+
 #define GST_TYPE_MF_CAMERA (gst_mfcamera_get_type())
 G_DECLARE_FINAL_TYPE(Gstmfcamera, gst_mfcamera,
     GST, MF_CAMERA, GstElement)

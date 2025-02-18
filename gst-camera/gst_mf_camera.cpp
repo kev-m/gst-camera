@@ -62,10 +62,9 @@
 #  include <config.h>
 #endif
 
-
-// #include <gst/gst.h> Moved to pch.h
-
 #include "gst_mf_camera.h" 
+
+#include "wmf_camera.h"
 
 GST_DEBUG_CATEGORY_STATIC(gst_mfcamera_debug);
 #define GST_CAT_DEFAULT gst_mfcamera_debug
@@ -102,7 +101,7 @@ static GstStaticPadTemplate src_factory = GST_STATIC_PAD_TEMPLATE("src",
 #define gst_mfcamera_parent_class parent_class
 G_DEFINE_TYPE(Gstmfcamera, gst_mfcamera, GST_TYPE_ELEMENT);
 
-GST_ELEMENT_REGISTER_DEFINE(mfcamera, "mf_camera", GST_RANK_NONE,
+GST_ELEMENT_REGISTER_DEFINE(mfcamera, GST_PACKAGE_NAME, GST_RANK_NONE,
     GST_TYPE_MF_CAMERA);
 
 static void gst_mfcamera_set_property(GObject* object,
@@ -136,7 +135,7 @@ gst_mfcamera_class_init(GstmfcameraClass* klass)
 
     gst_element_class_set_details_simple(gstelement_class,
         "mfcamera",
-        "WMF Virtual Camera",                    // Classification
+        PL_CLASS,                    // Classification
 		"A gstreamer plugin that forwards to a Windows Media Foundation virtual camera",   // Description
 		" <<kevin@kmz.co.za>>");		    // Author
 
@@ -246,7 +245,9 @@ gst_mfcamera_chain(GstPad* pad, GstObject* parent, GstBuffer* buf)
     filter = GST_MF_CAMERA(parent);
 
     if (filter->silent == FALSE)
-        g_print("I'm plugged, therefore I'm in.\n");
+    {
+        g_print("I'm plugged, therefore I'm in!!\n");
+    }
 
     // TODO: Push the data to the Media Foundation sink
 
@@ -275,8 +276,20 @@ mf_camera_init(GstPlugin* mf_camera)
      *
      * exchange the string 'Template mf_camera' with your description
      */
-    GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, "mf_camera",
+    GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, GST_PACKAGE_NAME,
         0, "Template mf_camera");
+
+	// Try and acquire WMF Camera
+    // regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\VCamSampleSource.dll (you must run this as administrator)
+    if (FAILED(RegisterVirtualCamera()))
+    {
+        g_print("Failed to register virtual camera.\n");
+	    return FALSE;
+    }
+    else
+    { 
+        g_print("Successfully registered virtual camera!\n");
+    }
 
     return GST_ELEMENT_REGISTER(mfcamera, mf_camera);
 }
@@ -287,7 +300,7 @@ mf_camera_init(GstPlugin* mf_camera)
  * compile this code. GST_PLUGIN_DEFINE needs PACKAGE to be defined.
  */
 #ifndef PACKAGE
-#define PACKAGE "mf_camera"
+#define PACKAGE GST_PACKAGE_NAME
 #endif
 
  /* gstreamer looks for this structure to register mf_cameras
@@ -297,10 +310,13 @@ mf_camera_init(GstPlugin* mf_camera)
 GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
     mf_camera,
-    "mf_camera",
+    GST_PACKAGE_NAME,
     mf_camera_init,
     PACKAGE_VERSION, GST_LICENSE, GST_PACKAGE_NAME, GST_PACKAGE_ORIGIN)
 
 // gst-launch-1.0.exe -v mfvideosrc ! video/x-raw, format=NV12, width=800, height=600, framerate=30/1, pixel-aspect-ratio=1/1 ! queue ! mf_camera
-// gst-launch-1.0.exe -v -m fakesrc ! mf_camera
-// gst-launch-1.0.exe -v -m fakesrc ! mf_camera silent=TRUE
+// gst-launch-1.0.exe -v fakesrc ! mf_camera
+// gst-launch-1.0.exe -v fakesrc ! mf_camera silent=TRUE
+// gst-launch-1.0.exe -v --gst-plugin-path=C:\Dev\WindowsWDK\VCamSample\x64\Debug fakesrc ! mf_camera silent=0
+
+// gst-launch-1.0.exe -v --gst-plugin-path=C:\Dev\WindowsWDK\VCamSample\x64\Debug mfvideosrc ! video/x-raw, format=NV12, width=800, height=600, framerate=30/1, pixel-aspect-ratio=1/1 ! queue ! mf_camera
