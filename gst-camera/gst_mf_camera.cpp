@@ -134,7 +134,7 @@ gst_mfcamera_class_init(GstmfcameraClass* klass)
             FALSE, G_PARAM_READWRITE));
 
     gst_element_class_set_details_simple(gstelement_class,
-        "mfcamera",
+        GST_PACKAGE_NAME,
         PL_CLASS,                    // Classification
 		"A gstreamer plugin that forwards to a Windows Media Foundation virtual camera",   // Description
 		" <<kevin@kmz.co.za>>");		    // Author
@@ -215,6 +215,8 @@ gst_mfcamera_sink_event(GstPad* pad, GstObject* parent,
     GST_LOG_OBJECT(filter, "Received %s event: %" GST_PTR_FORMAT,
         GST_EVENT_TYPE_NAME(event), event);
 
+    printf("gst_mfcamera_sink_event: %d\n", GST_EVENT_TYPE(event));
+
     switch (GST_EVENT_TYPE(event)) {
     case GST_EVENT_CAPS:
     {
@@ -249,7 +251,12 @@ gst_mfcamera_chain(GstPad* pad, GstObject* parent, GstBuffer* buf)
         g_print("I'm plugged, therefore I'm in!!\n");
     }
 
-    // TODO: Push the data to the Media Foundation sink
+    // Push the data to the Media Foundation sink
+    if (FAILED(ProcessFrame(buf)))
+    {
+		g_print("Failed to process frame.\n");
+		//return GST_FLOW_ERROR;
+    }
 
 
     /* just push out the incoming buffer without touching it */
@@ -265,6 +272,8 @@ gst_mfcamera_chain(GstPad* pad, GstObject* parent, GstBuffer* buf)
 }
 
 
+static int count = 0;
+
 /* entry point to initialize the plug-in
  * initialize the plug-in itself
  * register the element factories and other features
@@ -272,19 +281,19 @@ gst_mfcamera_chain(GstPad* pad, GstObject* parent, GstBuffer* buf)
 static gboolean
 mf_camera_init(GstPlugin* mf_camera)
 {
+    printf("mf_camera_init: %d\n", ++count);
     /* debug category for filtering log messages
      *
      * exchange the string 'Template mf_camera' with your description
      */
-    GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, GST_PACKAGE_NAME,
-        0, "Template mf_camera");
+    GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, GST_PACKAGE_NAME, 0, "Template mf_camera");
 
 	// Try and acquire WMF Camera
     // regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\VCamSampleSource.dll (you must run this as administrator)
     if (FAILED(RegisterVirtualCamera()))
     {
         g_print("Failed to register virtual camera.\n");
-	    return FALSE;
+	    // WHY??? return FALSE;
     }
     else
     { 

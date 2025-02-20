@@ -11,5 +11,13 @@
 //#include "framework.h"
 #include <gst/gst.h>
 
+// WMF headers
+#include <mfapi.h>
+#include <mfidl.h>
+#include <mfvirtualcamera.h>
+#include <mferror.h>
+#include <mfcaptureengine.h>
+#include <mfreadwrite.h>
+
 
 #endif //PCH_H

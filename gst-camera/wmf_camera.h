@@ -8,11 +8,6 @@
 #include <strsafe.h>
 #include <initguid.h>
 #include <propvarutil.h>
-#include <mfapi.h>
-#include <mfidl.h>
-#include <mfvirtualcamera.h>
-#include <mferror.h>
-#include <mfcaptureengine.h>
 #include <ks.h>
 #include <ksproxy.h>
 #include <ksmedia.h>
@@ -23,3 +18,5 @@
 HRESULT RegisterVirtualCamera();
 HRESULT UnregisterVirtualCamera();
 
+HRESULT ProcessFrame(GstBuffer* buf);
+HRESULT InjectSample(GstBuffer* buf)
