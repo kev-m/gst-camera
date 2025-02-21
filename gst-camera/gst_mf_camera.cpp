@@ -251,13 +251,26 @@ gst_mfcamera_chain(GstPad* pad, GstObject* parent, GstBuffer* buf)
         g_print("I'm plugged, therefore I'm in!!\n");
     }
 
-    // Push the data to the Media Foundation sink
-    if (FAILED(ProcessFrame(buf)))
-    {
-		g_print("Failed to process frame.\n");
-		//return GST_FLOW_ERROR;
+    // Prepare to inject the buffer to WMF
+    // Get the video frame data from the GstBuffer
+    GstMapInfo map;
+    if (!gst_buffer_map(buf, &map, GST_MAP_READ)) {
+        GST_ERROR("Failed to map GstBuffer");
+        return GST_FLOW_ERROR;
     }
 
+    // Get the frame size and format
+    gsize frame_size = map.size;
+    const void* frame_data = map.data;
+
+    // Get the timestamp (if available)
+    GstClockTime pts = GST_BUFFER_PTS(buf);
+
+    // Process the buffer (convert to IMFSample)
+    HRESULT hr = ProcessGstBuffer(frame_data, frame_size, pts);
+
+    // Unmap the buffer
+    gst_buffer_unmap(buf, &map);
 
     /* just push out the incoming buffer without touching it */
 	// TODO Only push if the srcpad is connected in the pipeline
@@ -289,7 +302,7 @@ mf_camera_init(GstPlugin* mf_camera)
     GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, GST_PACKAGE_NAME, 0, "Template mf_camera");
 
 	// Try and acquire WMF Camera
-    // regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\VCamSampleSource.dll (you must run this as administrator)
+    // regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\mf_camera.dll (you must run this as administrator)
     if (FAILED(RegisterVirtualCamera()))
     {
         g_print("Failed to register virtual camera.\n");

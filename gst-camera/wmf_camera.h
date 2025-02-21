@@ -18,5 +18,7 @@
 HRESULT RegisterVirtualCamera();
 HRESULT UnregisterVirtualCamera();
 
-HRESULT ProcessFrame(GstBuffer* buf);
-HRESULT InjectSample(GstBuffer* buf)
+
+HRESULT ProcessGstBuffer(const void* frame_data, gsize frame_size, GstClockTime pts);
+HRESULT DeliverSampleToStream(IMFSample* sample);
+

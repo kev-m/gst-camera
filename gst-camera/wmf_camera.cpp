@@ -6,15 +6,20 @@
 
 #include <gst\gstbuffer.h>
 
+#include <wrl.h>
+
+using namespace Microsoft::WRL;
+
 #include "wmf_camera.h"
 
 #define S_FAIL ((HRESULT)-1L)
 
 
 // regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\VCamSampleSource.dll (you must run this as administrator)
-static GUID CLSID_VCam = { 0x3cad447d,0xf283,0x4af4,{0xa3,0xb2,0x6f,0x53,0x63,0x30,0x9f,0x52} };
-
-WCHAR title[100] = L"WMFVirtualCamera";
+//static GUID CLSID_VCam = { 0x3cad447d,0xf283,0x4af4,{0xa3,0xb2,0x6f,0x53,0x63,0x30,0x9f,0x52} };
+//WCHAR title[100] = L"WMFVirtualCamera";
+static GUID CLSID_VCam = { 0x79c2dd91,0x230b, 0x419f, {0xb3,0x56,0x89,0x5d,0xc3,0x29,0x71,0x6d} };
+WCHAR title[100] = L"GSTVirtualCamera";
 
 IMFVirtualCamera* _vcam = 0;
 IMFSourceReader* _sourceReader = nullptr;
@@ -33,6 +38,7 @@ HRESULT RegisterVirtualCamera()
 	if (_vcam)
 		return S_OK;
 
+	// Create the virtual camera
 	auto clsid = GUID_ToStringW(CLSID_VCam);
 	HRESULT hr = MFCreateVirtualCamera(
 		MFVirtualCameraType_SoftwareCameraSource,
@@ -54,26 +60,6 @@ HRESULT RegisterVirtualCamera()
 		return S_FAIL;
 	};
 
-
-    IMFMediaSource* mediaSource = nullptr;
-    if (SUCCEEDED(_vcam->GetMediaSource(&mediaSource)))
-    {
-        g_print("RegisterVirtualCamera: Got mediaSource! :D\n");
-        // Create the source reader
-        if (FAILED(MFCreateSourceReaderFromMediaSource(mediaSource, nullptr, &_sourceReader))) {
-            g_print("Failed to create source reader.\n");
-            return S_FAIL;
-        }
-        else
-        {
-            g_print("RegisterVirtualCamera: created source reader! :D\n");
-        }
-    }
-    else
-    {
-        g_print("RegisterVirtualCamera: Unable to get mediaSource :(\n");
-    }
-
 	g_print("RegisterVirtualCamera: Success!\n");
     return S_OK;
 }
@@ -94,139 +80,63 @@ HRESULT UnregisterVirtualCamera()
 	return S_OK;
 }
 
-HRESULT ProcessFrame(GstBuffer* buf)
-{
-    if (!_sourceReader)
-        return S_FAIL;
-
-    // Map the GstBuffer to access the frame data
-    GstMapInfo map;
-    if (!gst_buffer_map(buf, &map, GST_MAP_READ))
-    {
-        g_print("Failed to map GstBuffer.\n");
-        return S_FAIL;
-    }
-
-    // Create a memory buffer over the mapped data
-    IMFMediaBuffer* mediaBuffer = nullptr;
-    HRESULT hr = MFCreateMemoryBuffer((DWORD)map.size, &mediaBuffer);
-    if (FAILED(hr))
-    {
-        g_print("Failed to create memory buffer.\n");
-        gst_buffer_unmap(buf, &map);
-        return S_FAIL;
-    }
-
-    // Copy the data to the media buffer
-    BYTE* bufferData = nullptr;
-    DWORD maxLength = 0, currentLength = 0;
-    hr = mediaBuffer->Lock(&bufferData, &maxLength, &currentLength);
-    if (SUCCEEDED(hr))
-    {
-        memcpy(bufferData, map.data, map.size);
-        mediaBuffer->Unlock();
-        mediaBuffer->SetCurrentLength(map.size);
-    }
-    else
-    {
-        g_print("Failed to lock media buffer.\n");
-        mediaBuffer->Release();
-        gst_buffer_unmap(buf, &map);
-        return S_FAIL;
-    }
-
-    // Create a sample and add the media buffer to it
+// Function to deliver a sample to the source reader
+HRESULT ProcessGstBuffer(const void* frame_data, gsize frame_size, GstClockTime pts) {
+    // Create an IMFSample
     IMFSample* sample = nullptr;
-    hr = MFCreateSample(&sample);
-    if (SUCCEEDED(hr))
-    {
-        sample->AddBuffer(mediaBuffer);
-        mediaBuffer->Release();
+    HRESULT hr = MFCreateSample(&sample);
+    if (FAILED(hr)) return hr;
 
-        // Process the sample using the source reader
-        hr = _sourceReader->ReadSample(
-            (DWORD)MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-            0,
-            nullptr,
-            nullptr,
-            nullptr,
-            &sample);
+    // Create an IMFMediaBuffer to hold the frame data
+    IMFMediaBuffer* buffer = nullptr;
+    hr = MFCreateMemoryBuffer(frame_size, &buffer);
+    if (FAILED(hr)) {
         sample->Release();
-    }
-    else
-    {
-        g_print("Failed to create sample.\n");
-        mediaBuffer->Release();
+        return hr;
     }
 
-    gst_buffer_unmap(buf, &map);
+    // Copy the frame data into the IMFMediaBuffer
+    BYTE* pBufferData = nullptr;
+    hr = buffer->Lock(&pBufferData, nullptr, nullptr);
+    if (SUCCEEDED(hr)) {
+        memcpy(pBufferData, frame_data, frame_size);
+        buffer->Unlock();
+    }
+
+    // Add the buffer to the sample
+    if (SUCCEEDED(hr)) {
+        hr = sample->AddBuffer(buffer);
+    }
+
+    // Set the sample timestamp (in 100-nanosecond units)
+    if (SUCCEEDED(hr) && pts != GST_CLOCK_TIME_NONE) {
+        LONGLONG sampleTime = pts / 100; // Convert to 100-nanosecond units
+        hr = sample->SetSampleTime(sampleTime);
+    }
+
+    // Clean up
+    buffer->Release();
+
+    // Pass the sample to the media stream
+    if (SUCCEEDED(hr)) {
+        hr = DeliverSampleToStream(sample);
+    }
+
+    sample->Release();
     return hr;
 }
 
-// Function to inject a sample into a stream sink
-HRESULT InjectSample(IMFStreamSink* streamSink, GstBuffer* buf)
-{
-    // Map the GstBuffer to access the frame data
-    GstMapInfo map;
-    if (!gst_buffer_map(buf, &map, GST_MAP_READ))
-    {
-        g_print("Failed to map GstBuffer.\n");
-        return S_FAIL;
-    }
+// Function to deliver a sample to the source reader
+HRESULT DeliverSampleToStream(IMFSample* sample) {
+    //if (!g_mediaStream) { // g_mediaStream is your IMFMediaStream2 instance
+    //    return E_FAIL;
+    //}
 
-    // Create a memory buffer over the mapped data
-    IMFMediaBuffer* mediaBuffer = nullptr;
-    HRESULT hr = MFCreateMemoryBuffer((DWORD)map.size, &mediaBuffer);
-    if (FAILED(hr))
-    {
-        g_print("Failed to create memory buffer.\n");
-        gst_buffer_unmap(buf, &map);
-        return S_FAIL;
-    }
-
-    // Copy the data to the media buffer
-    BYTE* bufferData = nullptr;
-    DWORD maxLength = 0, currentLength = 0;
-    hr = mediaBuffer->Lock(&bufferData, &maxLength, &currentLength);
-    if (SUCCEEDED(hr))
-    {
-        memcpy(bufferData, map.data, map.size);
-        mediaBuffer->Unlock();
-        mediaBuffer->SetCurrentLength((DWORD)map.size);
-    }
-    else
-    {
-        g_print("Failed to lock media buffer.\n");
-        mediaBuffer->Release();
-        gst_buffer_unmap(buf, &map);
-        return S_FAIL;
-    }
-
-    // Create a sample and add the media buffer to it
-    IMFSample* sample = nullptr;
-    hr = MFCreateSample(&sample);
-    if (SUCCEEDED(hr))
-    {
-        sample->AddBuffer(mediaBuffer);
-        mediaBuffer->Release();
-
-        // Set the sample time and duration (optional)
-        // sample->SetSampleTime(...);
-        // sample->SetSampleDuration(...);
-
-        // Process the sample using the stream sink
-        hr = streamSink->ProcessSample(sample);
-        sample->Release();
-    }
-    else
-    {
-        g_print("Failed to create sample.\n");
-        mediaBuffer->Release();
-    }
-
-    gst_buffer_unmap(buf, &map);
-    return hr;
+    //// Deliver the sample to the stream
+    //return g_mediaStream->ProcessSample(sample);
+    return S_OK;
 }
+
 
 #pragma comment(lib, "mfreadwrite")
 #pragma comment(lib, "mfsensorgroup")

@@ -19,5 +19,8 @@
 #include <mfcaptureengine.h>
 #include <mfreadwrite.h>
 
+// GSTVirtualCamera
+#include <mfobjects.h>
+
 
 #endif //PCH_H
