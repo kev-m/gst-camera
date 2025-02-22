@@ -14,6 +14,7 @@
 #include <wincodec.h>
 #include <uuids.h>
 
+extern GUID CLSID_VCam;
 
 HRESULT RegisterVirtualCamera();
 HRESULT UnregisterVirtualCamera();

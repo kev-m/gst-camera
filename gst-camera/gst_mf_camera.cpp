@@ -64,7 +64,7 @@
 
 #include "gst_mf_camera.h" 
 
-#include "wmf_camera.h"
+#include "GSTVirtualCamera.h"
 
 GST_DEBUG_CATEGORY_STATIC(gst_mfcamera_debug);
 #define GST_CAT_DEFAULT gst_mfcamera_debug

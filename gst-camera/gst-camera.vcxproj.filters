@@ -27,7 +27,7 @@
     <ClInclude Include="gst_mf_camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="wmf_camera.h">
+    <ClInclude Include="GSTVirtualCamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,7 +38,7 @@
     <ClCompile Include="gst_mf_camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="wmf_camera.cpp">
+    <ClCompile Include="GSTVirtualCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">

@@ -10,20 +10,17 @@
 
 using namespace Microsoft::WRL;
 
-#include "wmf_camera.h"
+#include "GSTVirtualCamera.h"
 
 #define S_FAIL ((HRESULT)-1L)
 
 
-// regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\VCamSampleSource.dll (you must run this as administrator)
-//static GUID CLSID_VCam = { 0x3cad447d,0xf283,0x4af4,{0xa3,0xb2,0x6f,0x53,0x63,0x30,0x9f,0x52} };
-//WCHAR title[100] = L"WMFVirtualCamera";
+// regsvr32 C:\Dev\WindowsWDK\gst-camera\x64\Debug\mf_camera.dll (you must run this as administrator)
 static GUID CLSID_VCam = { 0x79c2dd91,0x230b, 0x419f, {0xb3,0x56,0x89,0x5d,0xc3,0x29,0x71,0x6d} };
 WCHAR title[100] = L"GSTVirtualCamera";
 
-IMFVirtualCamera* _vcam = 0;
+ComPtr<IMFVirtualCamera> _vcam;
 IMFSourceReader* _sourceReader = nullptr;
-IMFStreamSink* streamSink = nullptr;
 
 const std::wstring GUID_ToStringW(const GUID& guid)
 {
@@ -39,21 +36,24 @@ HRESULT RegisterVirtualCamera()
 		return S_OK;
 
 	// Create the virtual camera
-	auto clsid = GUID_ToStringW(CLSID_VCam);
+    GUID categories[] = { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID };
+    auto clsid = GUID_ToStringW(CLSID_VCam);
 	HRESULT hr = MFCreateVirtualCamera(
 		MFVirtualCameraType_SoftwareCameraSource,
 		MFVirtualCameraLifetime_Session,
 		MFVirtualCameraAccess_CurrentUser,
 		title,
 		clsid.c_str(),
-		nullptr,
-		0,
+        categories,
+        ARRAYSIZE(categories),
 		&_vcam);
 	if (FAILED(hr)) {
 		g_print("Failed to create virtual camera.\n");
 		return S_FAIL;
 	}
 	g_print("RegisterVirtualCamera '%S' ok\n", clsid.c_str());
+
+    // _vcam->AddDeviceSourceInfo
 
 	if (FAILED(_vcam->Start(nullptr))) {
 		g_print("RegisterVirtualCamera: Cannot start VCam!\n");
@@ -76,7 +76,7 @@ HRESULT UnregisterVirtualCamera()
     // NOTE: we don't call Shutdown or this will cause 2 Shutdown calls to the media source and will prevent proper removing
     //auto hr = _vcam->Shutdown();
     auto hr = _vcam->Remove();
-	_vcam = 0;
+	_vcam = nullptr;
 	return S_OK;
 }
 
