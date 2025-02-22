@@ -30,6 +30,18 @@
     <ClInclude Include="GSTVirtualCamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GSTMediaSourceActivate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GSTMediaSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GSTMediaStream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GSTGuids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -45,6 +57,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GSTMediaSource.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GSTMediaSourceActivate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,12 +2,10 @@
 
 #include <wrl.h>
 
-
+#include "GSTMediaSourceActivate.h"
 
 // Define the class GUID for the virtual camera
 // {79c2dd91-230b-419f-b356-895dc329716d}
-static const GUID CLSID_GSTVirtualCamera =
-{ 0x79c2dd91, 0x230b, 0x419f, { 0xb3, 0x56, 0x89, 0x5d, 0xc3, 0x29, 0x71, 0x6d } };
 #define VCAM_REG_PATH L"SOFTWARE\\Microsoft\\Windows Media Foundation\\VirtualCamera\\{79c2dd91-230b-419f-b356-895dc329716d}"
 
 HMODULE _hModule;
@@ -28,14 +26,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 }
 
 // Factory function for COM registration
-HRESULT CreateVirtualCamera(IMFVirtualCamera** ppCamera)
-{
-    g_print("Call to CreateVirtualCamera(...)\n");
-    if (!ppCamera) return E_POINTER;
-    //ComPtr<GSTVirtualCamera> spCamera = Make<GSTVirtualCamera>();
-    //return spCamera.CopyTo(ppCamera);
-    return S_OK;
-}
+//HRESULT CreateVirtualCamera(IMFVirtualCamera** ppCamera)
+//{
+//    g_print("Call to CreateVirtualCamera(...)\n");
+//    if (!ppCamera) return E_POINTER;
+//    ComPtr<GSTVirtualCamera> spCamera = Make<GSTVirtualCamera>();
+//    return spCamera.CopyTo(ppCamera);
+//}
 
 __control_entrypoint(DllExport)
 STDAPI DllCanUnloadNow()
@@ -47,15 +44,25 @@ STDAPI DllCanUnloadNow()
 }
 
 // DLL entry point
+__control_entrypoint(DllExport)
 STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID FAR* ppv)
 {
     g_print("Call to DllGetClassObject(....).\n");
     if (rclsid == CLSID_GSTVirtualCamera)
     {
-        return CreateVirtualCamera(reinterpret_cast<IMFVirtualCamera**>(ppv));
+        Microsoft::WRL::ComPtr<GSTMediaSourceActivate> spActivate = new GSTMediaSourceActivate();
+        if (!spActivate)
+            return E_OUTOFMEMORY;
+
+        HRESULT hr = spActivate->Initialize();
+        if (FAILED(hr))
+            return hr;
+
+        return spActivate.CopyTo(riid, ppv);
     }
     return CLASS_E_CLASSNOTAVAILABLE;
 }
+
 
 // DLL registration
 STDAPI DllRegisterServer()

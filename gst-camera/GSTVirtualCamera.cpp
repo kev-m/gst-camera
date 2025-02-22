@@ -8,6 +8,8 @@
 
 #include <wrl.h>
 
+#include "GSTGuids.h"
+
 using namespace Microsoft::WRL;
 
 #include "GSTVirtualCamera.h"
@@ -16,7 +18,6 @@ using namespace Microsoft::WRL;
 
 
 // regsvr32 C:\Dev\WindowsWDK\gst-camera\x64\Debug\mf_camera.dll (you must run this as administrator)
-static GUID CLSID_VCam = { 0x79c2dd91,0x230b, 0x419f, {0xb3,0x56,0x89,0x5d,0xc3,0x29,0x71,0x6d} };
 WCHAR title[100] = L"GSTVirtualCamera";
 
 ComPtr<IMFVirtualCamera> _vcam;
@@ -34,21 +35,31 @@ HRESULT RegisterVirtualCamera()
 {
 	if (_vcam)
 		return S_OK;
+    // Initialize Media Foundation
+    HRESULT hr = MFStartup(MF_VERSION);
+    if (FAILED(hr)) {
+        g_print("MFStartup failed. %d\n", hr);
+        return hr;
+    }
 
 	// Create the virtual camera
     GUID categories[] = { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID };
-    auto clsid = GUID_ToStringW(CLSID_VCam);
+    auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
 
     // Create attributes for the virtual camera
     ComPtr<IMFAttributes> attributes;
-    HRESULT hr = MFCreateAttributes(&attributes, 1);
-    if (FAILED(hr))
+    hr = MFCreateAttributes(&attributes, 1);
+    if (FAILED(hr)) {
+        g_print("MFCreateAttributes failed. %d\n", hr);
         return hr;
+    }
 
     // Associate the virtual camera with GSTMediaSourceActivate CLSID
-    hr = attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_PROVIDER_DEVICE_ID, CLSID_VCam);
-    if (FAILED(hr))
+    hr = attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_PROVIDER_DEVICE_ID, CLSID_GSTVirtualCamera);
+    if (FAILED(hr)) {
+        g_print("SetGUID failed. %d\n", hr);
         return hr;
+    }
 
 	hr = MFCreateVirtualCamera(
 		MFVirtualCameraType_SoftwareCameraSource,
@@ -66,11 +77,11 @@ HRESULT RegisterVirtualCamera()
 	}
 	g_print("RegisterVirtualCamera '%S' ok!\n", clsid.c_str());
 
-	if (FAILED(_vcam->AddDeviceSourceInfo(clsid.c_str())))
-	{
-		g_print("RegisterVirtualCamera: Cannot add device source info!\n");
-		return S_FAIL;
-	}   
+	//if (FAILED(_vcam->AddDeviceSourceInfo(clsid.c_str())))
+	//{
+	//	g_print("RegisterVirtualCamera: Cannot add device source info!\n");
+	//	return S_FAIL;
+	//}   
 
 	if (FAILED(_vcam->Start(nullptr))) {
 		g_print("RegisterVirtualCamera: Cannot start VCam!\n");
