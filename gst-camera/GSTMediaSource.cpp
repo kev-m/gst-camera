@@ -166,6 +166,7 @@ public:
     {
         if (!_mediaStream)
         {
+            g_print("GSTMediaSource::Start()");
             _mediaStream = new GSTMediaStream(); // Create the media stream
         }
         _isStarted = true;

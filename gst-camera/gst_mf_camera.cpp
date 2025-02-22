@@ -302,11 +302,11 @@ mf_camera_init(GstPlugin* mf_camera)
     GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, GST_PACKAGE_NAME, 0, "Template mf_camera");
 
 	// Try and acquire WMF Camera
-    // regsvr32 C:\Dev\WindowsWDK\VCamSample\x64\Debug\mf_camera.dll (you must run this as administrator)
+    // regsvr32 C:\Dev\WindowsWDK\gst-camera\x64\Debug\mf_camera.dll (you must run this as administrator)
     if (FAILED(RegisterVirtualCamera()))
     {
         g_print("Failed to register virtual camera.\n");
-	    // WHY??? return FALSE;
+	    //return FALSE;
     }
     else
     { 
@@ -339,6 +339,6 @@ GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
 // gst-launch-1.0.exe -v mfvideosrc ! video/x-raw, format=NV12, width=800, height=600, framerate=30/1, pixel-aspect-ratio=1/1 ! queue ! mf_camera
 // gst-launch-1.0.exe -v fakesrc ! mf_camera
 // gst-launch-1.0.exe -v fakesrc ! mf_camera silent=TRUE
-// gst-launch-1.0.exe -v --gst-plugin-path=C:\Dev\WindowsWDK\VCamSample\x64\Debug fakesrc ! mf_camera silent=0
+// gst-launch-1.0.exe -v --gst-plugin-path=C:\Dev\WindowsWDK\gst-camera\x64\Debug fakesrc ! mf_camera silent=0
 
-// gst-launch-1.0.exe -v --gst-plugin-path=C:\Dev\WindowsWDK\VCamSample\x64\Debug mfvideosrc ! video/x-raw, format=NV12, width=800, height=600, framerate=30/1, pixel-aspect-ratio=1/1 ! queue ! mf_camera
+// gst-launch-1.0.exe -v --gst-plugin-path=C:\Dev\WindowsWDK\gst-camera\x64\Debug mfvideosrc ! "video/x-raw, format=NV12, width=800, height=600, framerate=30/1" ! queue ! mf_camera

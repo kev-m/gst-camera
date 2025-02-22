@@ -38,7 +38,10 @@ HRESULT RegisterVirtualCamera()
 	// Create the virtual camera
     GUID categories[] = { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID };
     auto clsid = GUID_ToStringW(CLSID_VCam);
-	HRESULT hr = MFCreateVirtualCamera(
+
+    // Create attributes for the virtual camera
+    ComPtr<IMFAttributes> attributes;
+    HRESULT hr = MFCreateVirtualCamera(
 		MFVirtualCameraType_SoftwareCameraSource,
 		MFVirtualCameraLifetime_Session,
 		MFVirtualCameraAccess_CurrentUser,
@@ -47,13 +50,14 @@ HRESULT RegisterVirtualCamera()
         categories,
         ARRAYSIZE(categories),
 		&_vcam);
-	if (FAILED(hr)) {
-		g_print("Failed to create virtual camera.\n");
+
+    if (FAILED(hr)) {
+		g_print("Failed to create virtual camera. %d\n", hr);
 		return S_FAIL;
 	}
-	g_print("RegisterVirtualCamera '%S' ok\n", clsid.c_str());
+	g_print("RegisterVirtualCamera '%S' ok!\n", clsid.c_str());
 
-    // _vcam->AddDeviceSourceInfo
+    _vcam->AddDeviceSourceInfo(clsid.c_str());
 
 	if (FAILED(_vcam->Start(nullptr))) {
 		g_print("RegisterVirtualCamera: Cannot start VCam!\n");
