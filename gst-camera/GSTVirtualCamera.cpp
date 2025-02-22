@@ -41,7 +41,16 @@ HRESULT RegisterVirtualCamera()
 
     // Create attributes for the virtual camera
     ComPtr<IMFAttributes> attributes;
-    HRESULT hr = MFCreateVirtualCamera(
+    HRESULT hr = MFCreateAttributes(&attributes, 1);
+    if (FAILED(hr))
+        return hr;
+
+    // Associate the virtual camera with GSTMediaSourceActivate CLSID
+    hr = attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_PROVIDER_DEVICE_ID, CLSID_VCam);
+    if (FAILED(hr))
+        return hr;
+
+	hr = MFCreateVirtualCamera(
 		MFVirtualCameraType_SoftwareCameraSource,
 		MFVirtualCameraLifetime_Session,
 		MFVirtualCameraAccess_CurrentUser,
@@ -57,7 +66,11 @@ HRESULT RegisterVirtualCamera()
 	}
 	g_print("RegisterVirtualCamera '%S' ok!\n", clsid.c_str());
 
-    _vcam->AddDeviceSourceInfo(clsid.c_str());
+	if (FAILED(_vcam->AddDeviceSourceInfo(clsid.c_str())))
+	{
+		g_print("RegisterVirtualCamera: Cannot add device source info!\n");
+		return S_FAIL;
+	}   
 
 	if (FAILED(_vcam->Start(nullptr))) {
 		g_print("RegisterVirtualCamera: Cannot start VCam!\n");

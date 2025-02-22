@@ -28,6 +28,7 @@ private:
 public:
     GSTMediaStream() : _refCount(1), _eventQueue(nullptr), _attributes(nullptr), _mediaType(nullptr), _isActive(false)
     {
+        g_print("GSTMediaStream::GSTMediaStream()");
         MFCreateEventQueue(&_eventQueue);
     }
 
@@ -160,7 +161,10 @@ private:
     bool _isStarted;
 
 public:
-    GSTMediaSource() : _refCount(1), _mediaStream(nullptr), _isStarted(false) {}
+    GSTMediaSource() : _refCount(1), _mediaStream(nullptr), _isStarted(false) 
+    {
+        g_print("GSTMediaSource::GSTMediaSource()");
+    }
 
     HRESULT Start(IMFAsyncCallback* pCallback)
     {
@@ -230,7 +234,11 @@ public:
 class GSTMediaSourceActivate : public IMFActivate
 {
 public:
-    GSTMediaSourceActivate() : _refCount(1), _mediaSource(nullptr) {};
+    GSTMediaSourceActivate() : _refCount(1), _mediaSource(nullptr)
+    {
+        g_print("GSTMediaSourceActivate::GSTMediaSourceActivate()");
+    }
+
 
     HRESULT Initialize()
     {
