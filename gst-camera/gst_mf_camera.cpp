@@ -135,9 +135,9 @@ gst_mfcamera_class_init(GstmfcameraClass* klass)
 
     gst_element_class_set_details_simple(gstelement_class,
         GST_PACKAGE_NAME,
-        PL_CLASS,                    // Classification
-		"A gstreamer plugin that forwards to a Windows Media Foundation virtual camera",   // Description
-		" <<kevin@kmz.co.za>>");		    // Author
+        PL_CLASS,           // Classification
+        GL_DESCRIPTION,     // Description
+		"Kevin Meyer");	    // Author
 
     gst_element_class_add_pad_template(gstelement_class,
         gst_static_pad_template_get(&src_factory));

@@ -1,12 +1,10 @@
 #include "pch.h"
 
 #include <wrl.h>
+#include <string>
 
 #include "GSTMediaSourceActivate.h"
 
-// Define the class GUID for the virtual camera
-// {79c2dd91-230b-419f-b356-895dc329716d}
-#define VCAM_REG_PATH L"SOFTWARE\\Microsoft\\Windows Media Foundation\\VirtualCamera\\{79c2dd91-230b-419f-b356-895dc329716d}"
 
 HMODULE _hModule;
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
@@ -25,19 +23,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	return TRUE;
 }
 
-// Factory function for COM registration
-//HRESULT CreateVirtualCamera(IMFVirtualCamera** ppCamera)
-//{
-//    g_print("Call to CreateVirtualCamera(...)\n");
-//    if (!ppCamera) return E_POINTER;
-//    ComPtr<GSTVirtualCamera> spCamera = Make<GSTVirtualCamera>();
-//    return spCamera.CopyTo(ppCamera);
-//}
 
 __control_entrypoint(DllExport)
 STDAPI DllCanUnloadNow()
 {
-    g_print("Call to DllCanUnloadNow().\n");
+    printf("Call to DllCanUnloadNow().\n");
     // Return OK if the camera is not in use.
 
 	return S_OK;
@@ -45,10 +35,10 @@ STDAPI DllCanUnloadNow()
 
 // DLL entry point
 __control_entrypoint(DllExport)
-STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID FAR* ppv)
+HRESULT __stdcall DllGetClassObject(GUID const& clsid, GUID const& iid, void** result)
 {
-    g_print("Call to DllGetClassObject(....).\n");
-    if (rclsid == CLSID_GSTVirtualCamera)
+    printf("Call to DllGetClassObject(....).\n");
+    if (clsid == CLSID_GSTVirtualCamera)
     {
         Microsoft::WRL::ComPtr<GSTMediaSourceActivate> spActivate = new GSTMediaSourceActivate();
         if (!spActivate)
@@ -58,7 +48,7 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID
         if (FAILED(hr))
             return hr;
 
-        return spActivate.CopyTo(riid, ppv);
+        return spActivate.CopyTo(iid, result);
     }
     return CLASS_E_CLASSNOTAVAILABLE;
 }
@@ -67,15 +57,17 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Outptr_ LPVOID
 // DLL registration
 STDAPI DllRegisterServer()
 {
-    g_print("Call to DllRegisterServer(....).\n");
+    printf("Call to DllRegisterServer(....).\n");
     // Register the virtual camera with Windows
+    auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
+    std::wstring path = L"Software\\Classes\\CLSID\\" + clsid + L"\\InprocServer32";
     HKEY hKey;
     LONG lResult;
 
     // Create the registry key
     lResult = RegCreateKeyEx(
         HKEY_LOCAL_MACHINE,
-        VCAM_REG_PATH,
+        path.c_str(),
         0,
         NULL,
         REG_OPTION_NON_VOLATILE,
@@ -113,14 +105,46 @@ STDAPI DllRegisterServer()
     return HRESULT_FROM_WIN32(lResult);
 }
 
+//STDAPI DllRegisterServer()
+//{
+//    printf("Call to DllRegisterServer(....).\n");
+//    auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
+//    std::wstring path = L"Software\\Classes\\CLSID\\" + clsid + L"\\InprocServer32";
+//
+//    wchar_t szModulePath[MAX_PATH];
+//    if (GetModuleFileName(NULL, szModulePath, MAX_PATH) == 0)
+//    {
+//        RegCloseKey(hKey);
+//        return HRESULT_FROM_WIN32(GetLastError());
+//    }
+//
+//
+//    // note: a vcam *must* be registered in HKEY_LOCAL_MACHINE
+//    // for the frame server to be able to talk with it.
+//    registry_key key;
+//    RETURN_IF_WIN32_ERROR(RegWriteKey(HKEY_LOCAL_MACHINE, path.c_str(), key.put()));
+//    RETURN_IF_WIN32_ERROR(RegWriteValue(key.get(), nullptr, exePath));
+//    RETURN_IF_WIN32_ERROR(RegWriteValue(key.get(), L"ThreadingModel", L"Both"));
+//    return S_OK;
+//}
+
 STDAPI DllUnregisterServer()
 {
-    g_print("Call to DllUnregisterServer(....).\n");
+    printf("Call to DllUnregisterServer(....).\n");
     // Unregister the virtual camera
-    LONG lResult = RegDeleteTree(HKEY_LOCAL_MACHINE, VCAM_REG_PATH);
+    auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
+    std::wstring path = L"Software\\Classes\\CLSID\\" + clsid;
+    LONG lResult = RegDeleteTree(HKEY_LOCAL_MACHINE, path.c_str());
     if (lResult != ERROR_SUCCESS && lResult != ERROR_FILE_NOT_FOUND)
     {
         return HRESULT_FROM_WIN32(lResult);
     }
     return S_OK;
+}
+
+const std::wstring GUID_ToStringW(const GUID& guid)
+{
+    wchar_t name[64];
+    std::ignore = StringFromGUID2(guid, name, _countof(name));
+    return name;
 }

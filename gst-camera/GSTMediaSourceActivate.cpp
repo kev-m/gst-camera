@@ -4,7 +4,7 @@
 
 HRESULT GSTMediaSourceActivate::Initialize()
 {
-    g_print("GSTMediaSourceActivate::Initialize()\n");
+    printf("GSTMediaSourceActivate::Initialize()\n");
     _mediaSource = new GSTMediaSource();
     RETURN_IF_FAILED(SetUINT32(MF_VIRTUALCAMERA_PROVIDE_ASSOCIATED_CAMERA_SOURCES, 1));
     RETURN_IF_FAILED(SetGUID(MFT_TRANSFORM_CLSID_Attribute, CLSID_GSTVirtualCamera));

@@ -21,14 +21,6 @@ using namespace Microsoft::WRL;
 WCHAR title[100] = L"GSTVirtualCamera";
 
 ComPtr<IMFVirtualCamera> _vcam;
-IMFSourceReader* _sourceReader = nullptr;
-
-const std::wstring GUID_ToStringW(const GUID& guid)
-{
-	wchar_t name[64];
-	std::ignore = StringFromGUID2(guid, name, _countof(name));
-	return name;
-}
 
 
 HRESULT RegisterVirtualCamera()
@@ -38,26 +30,27 @@ HRESULT RegisterVirtualCamera()
     // Initialize Media Foundation
     HRESULT hr = MFStartup(MF_VERSION);
     if (FAILED(hr)) {
-        g_print("MFStartup failed. %d\n", hr);
+        printf("MFStartup failed. %d\n", hr);
         return hr;
     }
 
 	// Create the virtual camera
     GUID categories[] = { MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID };
     auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
+    //auto clsid = GUID_ToStringW(CLSID_VCam);
 
     // Create attributes for the virtual camera
     ComPtr<IMFAttributes> attributes;
     hr = MFCreateAttributes(&attributes, 1);
     if (FAILED(hr)) {
-        g_print("MFCreateAttributes failed. %d\n", hr);
+        printf("MFCreateAttributes failed. %d\n", hr);
         return hr;
     }
 
     // Associate the virtual camera with GSTMediaSourceActivate CLSID
     hr = attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_PROVIDER_DEVICE_ID, CLSID_GSTVirtualCamera);
     if (FAILED(hr)) {
-        g_print("SetGUID failed. %d\n", hr);
+        printf("SetGUID failed. %d\n", hr);
         return hr;
     }
 
@@ -67,28 +60,28 @@ HRESULT RegisterVirtualCamera()
 		MFVirtualCameraAccess_CurrentUser,
 		title,
 		clsid.c_str(),
-        categories,
-        ARRAYSIZE(categories),
+        0, //categories,
+        NULL, //ARRAYSIZE(categories),
 		&_vcam);
 
     if (FAILED(hr)) {
-		g_print("Failed to create virtual camera. %d\n", hr);
+		printf("Failed to create virtual camera. %d\n", hr);
 		return S_FAIL;
 	}
-	g_print("RegisterVirtualCamera '%S' ok!\n", clsid.c_str());
+	printf("RegisterVirtualCamera '%S' ok!\n", clsid.c_str());
 
 	//if (FAILED(_vcam->AddDeviceSourceInfo(clsid.c_str())))
 	//{
-	//	g_print("RegisterVirtualCamera: Cannot add device source info!\n");
+	//	printf("RegisterVirtualCamera: Cannot add device source info!\n");
 	//	return S_FAIL;
 	//}   
 
 	if (FAILED(_vcam->Start(nullptr))) {
-		g_print("RegisterVirtualCamera: Cannot start VCam!\n");
+		printf("RegisterVirtualCamera: Cannot start VCam!\n");
 		return S_FAIL;
 	};
 
-	g_print("RegisterVirtualCamera: Success!\n");
+	printf("RegisterVirtualCamera: Success!\n");
     return S_OK;
 }
 
@@ -97,10 +90,6 @@ HRESULT UnregisterVirtualCamera()
 	if (!_vcam)
 		return S_OK;
 
-    if (_sourceReader) {
-        _sourceReader->Release();
-        _sourceReader = nullptr;
-    }
     // NOTE: we don't call Shutdown or this will cause 2 Shutdown calls to the media source and will prevent proper removing
     //auto hr = _vcam->Shutdown();
     auto hr = _vcam->Remove();
