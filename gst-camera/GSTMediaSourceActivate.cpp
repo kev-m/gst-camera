@@ -11,6 +11,7 @@ HRESULT GSTMediaSourceActivate::Initialize()
     RETURN_IF_FAILED(MFCreateAttributes(&m_spActivateAttributes, 1));
     RETURN_IF_FAILED(m_spActivateAttributes->SetUINT32(MF_VIRTUALCAMERA_PROVIDE_ASSOCIATED_CAMERA_SOURCES, 1));
     RETURN_IF_FAILED(_mediaSource->Initialize(this));
+    printf("GSTMediaSourceActivate::Initialize() - complete!!\n");
     return S_OK;
 }
 

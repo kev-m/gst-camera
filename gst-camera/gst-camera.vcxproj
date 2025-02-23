@@ -176,6 +176,7 @@ mfuuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     <ClInclude Include="gst_mf_camera.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="GSTVirtualCamera.h" />
+    <ClInclude Include="tools.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GSTMediaSource.cpp" />

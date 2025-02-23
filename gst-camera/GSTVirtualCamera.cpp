@@ -16,6 +16,8 @@ using namespace Microsoft::WRL;
 #include "GSTMediaSource.h"
 #include "GSTMediaStream.h"
 
+#include "tools.h"
+
 #define S_FAIL ((HRESULT)-1L)
 
 
@@ -26,14 +28,16 @@ ComPtr<IMFVirtualCamera> _vcam;
 ComPtr<GSTMediaSource> _media_source;
 ComPtr<GSTMediaStream> _stream;
 
+bool started = false;
+
 HRESULT RegisterVirtualCamera()
 {
 	if (_vcam)
 		return S_OK;
     // Initialize Media Foundation
     HRESULT hr = MFStartup(MF_VERSION);
-    if (FAILED(hr)) {
-        printf("MFStartup failed. %d\n", hr);
+    if (print_error_if_failed(hr)) {
+        printf("MFStartup failed. %s\n", PrintErrorMessageFromHRESULT(hr).c_str());
         return hr;
     }
 
@@ -45,14 +49,14 @@ HRESULT RegisterVirtualCamera()
     // Create attributes for the virtual camera
     ComPtr<IMFAttributes> attributes;
     hr = MFCreateAttributes(&attributes, 1);
-    if (FAILED(hr)) {
+    if (print_error_if_failed(hr)) {
         printf("MFCreateAttributes failed. %d\n", hr);
         return hr;
     }
 
     // Associate the virtual camera with GSTMediaSourceActivate CLSID
     hr = attributes->SetGUID(MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_PROVIDER_DEVICE_ID, CLSID_GSTVirtualCamera);
-    if (FAILED(hr)) {
+    if (print_error_if_failed(hr)) {
         printf("SetGUID failed. %d\n", hr);
         return hr;
     }
@@ -63,22 +67,21 @@ HRESULT RegisterVirtualCamera()
 		MFVirtualCameraAccess_CurrentUser,
 		title,
 		clsid.c_str(),
-        0, //categories,
-        NULL, //ARRAYSIZE(categories),
+        categories,
+        ARRAYSIZE(categories),
 		&_vcam);
 
-    if (FAILED(hr)) {
+    if (print_error_if_failed(hr)) {
 		printf("Failed to create virtual camera. %d\n", hr);
 		return S_FAIL;
 	}
 	printf("RegisterVirtualCamera '%S' ok!\n", clsid.c_str());
 
-	//if (FAILED(_vcam->AddDeviceSourceInfo(clsid.c_str())))
-	//{
-	//	printf("RegisterVirtualCamera: Cannot add device source info!\n");
-	//	return S_FAIL;
-	//}   
-
+    if (print_error_if_failed(_vcam->Start(nullptr))) {
+        printf("StartVirtualCamera: Cannot start VCam!\n");
+        return S_FAIL;
+    }
+    printf("StartVirtualCamera() - Started!\n");
 
 	printf("RegisterVirtualCamera: Success!\n");
     return S_OK;
@@ -92,9 +95,17 @@ HRESULT StartVirtualCamera()
         printf("StartVirtualCamera() -- Fail, _vcam is not initialised!!\n");
         return S_FAIL;
     }
-    if (FAILED(_vcam->Start(nullptr))) {
-    	printf("RegisterVirtualCamera: Cannot start VCam!\n");
-    	return S_FAIL;
+    if (started == false) {
+		started = true;
+        if (FAILED(_vcam->Start(nullptr))) {
+            printf("StartVirtualCamera: Cannot start VCam!\n");
+            return S_FAIL;
+        }
+        printf("StartVirtualCamera() - Started!\n");
+    }
+    else
+    {
+		printf("StartVirtualCamera() - Already started!\n");
     };
 
     //IMFMediaSource* source;
@@ -115,7 +126,6 @@ HRESULT StartVirtualCamera()
 	   // printf("StartVirtualCamera() - Failed to get media source!\n");
     //}
 
-    printf("StartVirtualCamera() - Started!\n");
     return S_OK;
 }
 
@@ -180,7 +190,8 @@ HRESULT ProcessGstBuffer(const void* frame_data, gsize frame_size, GstClockTime 
 
 // Function to deliver a sample to the source reader
 HRESULT DeliverSampleToStream(IMFSample* sample) {
-    printf("DeliverSampleToStream(...)\n");
+
+    //printf("DeliverSampleToStream(...)\n");
     //if (!g_mediaStream) { // g_mediaStream is your IMFMediaStream2 instance
     //    return E_FAIL;
     //}

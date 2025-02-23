@@ -166,6 +166,16 @@ gst_mfcamera_init(Gstmfcamera* filter)
     gst_element_add_pad(GST_ELEMENT(filter), filter->srcpad);
 
     filter->silent = FALSE;
+
+    //
+    // Register here?
+    // Try and acquire WMF Camera
+    // regsvr32 C:\Dev\WindowsWDK\gst-camera\x64\Debug\mf_camera.dll (you must run this as administrator)
+    if (FAILED(RegisterVirtualCamera()))
+        g_print("Failed to register virtual camera.\n");
+    else
+        g_print("Successfully registered virtual camera!\n");
+
 }
 
 static void
@@ -200,8 +210,8 @@ gst_mfcamera_get_property(GObject* object, guint prop_id,
     }
 }
 
-/* GstElement vmethod implementations */
 
+/* GstElement vmethod implementations */
 /* this function handles sink events */
 static gboolean
 gst_mfcamera_sink_event(GstPad* pad, GstObject* parent,
@@ -220,11 +230,8 @@ gst_mfcamera_sink_event(GstPad* pad, GstObject* parent,
     switch (GST_EVENT_TYPE(event)) {
 	case GST_EVENT_STREAM_START:
 	{
-        if (FAILED(StartVirtualCamera()))
-        {
-            g_print("Failed to register virtual camera.\n");
-            return FALSE;
-        }
+        // Or register here?
+
         /* and forward */
         ret = gst_pad_event_default(pad, parent, event);
         break;
@@ -311,15 +318,6 @@ mf_camera_init(GstPlugin* mf_camera)
      * exchange the string 'Template mf_camera' with your description
      */
     GST_DEBUG_CATEGORY_INIT(gst_mfcamera_debug, GST_PACKAGE_NAME, 0, "Template mf_camera");
-
-    // Try and acquire WMF Camera
-    // regsvr32 C:\Dev\WindowsWDK\gst-camera\x64\Debug\mf_camera.dll (you must run this as administrator)
-    if (FAILED(RegisterVirtualCamera()))
-    {
-        g_print("Failed to register virtual camera.\n");
-        return FALSE;
-    }
-    g_print("Successfully registered virtual camera!\n");
 
     return GST_ELEMENT_REGISTER(mfcamera, mf_camera);
 }

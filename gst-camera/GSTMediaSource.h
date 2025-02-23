@@ -25,7 +25,7 @@ public:
     HRESULT Initialize(IMFAttributes* attributes)
     {
 		g_print("GSTMediaSource::Initialize()\n");
-        _mediaStream->Initialize(this);
+        //_mediaStream->Initialize(this);
 		return S_OK;
     }
 
@@ -35,6 +35,7 @@ public:
         {
             g_print("GSTMediaSource::Start()\n");
             _mediaStream = new GSTMediaStream(); // Create the media stream
+            _mediaStream->Initialize(this);
         }
         _isStarted = true;
 
