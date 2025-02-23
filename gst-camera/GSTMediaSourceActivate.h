@@ -18,7 +18,7 @@ class GSTMediaSourceActivate : public IMFActivate
 public:
     GSTMediaSourceActivate() : _refCount(1), _mediaSource(nullptr)
     {
-        g_print("GSTMediaSourceActivate::GSTMediaSourceActivate()");
+        g_print("GSTMediaSourceActivate::GSTMediaSourceActivate()\n");
     }
 
 private:

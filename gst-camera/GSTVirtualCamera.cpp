@@ -13,6 +13,8 @@
 using namespace Microsoft::WRL;
 
 #include "GSTVirtualCamera.h"
+#include "GSTMediaSource.h"
+#include "GSTMediaStream.h"
 
 #define S_FAIL ((HRESULT)-1L)
 
@@ -21,7 +23,8 @@ using namespace Microsoft::WRL;
 WCHAR title[100] = L"GSTVirtualCamera";
 
 ComPtr<IMFVirtualCamera> _vcam;
-
+ComPtr<GSTMediaSource> _media_source;
+ComPtr<GSTMediaStream> _stream;
 
 HRESULT RegisterVirtualCamera()
 {
@@ -76,14 +79,46 @@ HRESULT RegisterVirtualCamera()
 	//	return S_FAIL;
 	//}   
 
-	if (FAILED(_vcam->Start(nullptr))) {
-		printf("RegisterVirtualCamera: Cannot start VCam!\n");
-		return S_FAIL;
-	};
 
 	printf("RegisterVirtualCamera: Success!\n");
     return S_OK;
 }
+
+HRESULT StartVirtualCamera()
+{
+    printf("StartVirtualCamera()\n");
+    if (!_vcam)
+    {
+        printf("StartVirtualCamera() -- Fail, _vcam is not initialised!!\n");
+        return S_FAIL;
+    }
+    if (FAILED(_vcam->Start(nullptr))) {
+    	printf("RegisterVirtualCamera: Cannot start VCam!\n");
+    	return S_FAIL;
+    };
+
+    //IMFMediaSource* source;
+    //if (FAILED(_vcam->GetMediaSource(&source)))
+    //{
+    //    _media_source = dynamic_cast<GSTMediaSource*>(source);
+    //    if (FAILED(_media_source->GetStream(&_stream)))
+    //    {
+    //        printf("StartVirtualCamera() - Failed to get stream!\n");
+    //    }
+    //    else
+    //    {
+    //        printf("StartVirtualCamera() - Got Stream\n");
+    //    }
+    //}
+    //else
+    //{
+	   // printf("StartVirtualCamera() - Failed to get media source!\n");
+    //}
+
+    printf("StartVirtualCamera() - Started!\n");
+    return S_OK;
+}
+
 
 HRESULT UnregisterVirtualCamera()
 {
@@ -145,6 +180,7 @@ HRESULT ProcessGstBuffer(const void* frame_data, gsize frame_size, GstClockTime 
 
 // Function to deliver a sample to the source reader
 HRESULT DeliverSampleToStream(IMFSample* sample) {
+    printf("DeliverSampleToStream(...)\n");
     //if (!g_mediaStream) { // g_mediaStream is your IMFMediaStream2 instance
     //    return E_FAIL;
     //}

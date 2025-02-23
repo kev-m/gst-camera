@@ -15,6 +15,7 @@
 #include <uuids.h>
 
 HRESULT RegisterVirtualCamera();
+HRESULT StartVirtualCamera();
 HRESULT UnregisterVirtualCamera();
 
 

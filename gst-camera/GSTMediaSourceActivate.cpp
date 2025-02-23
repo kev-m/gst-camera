@@ -10,13 +10,14 @@ HRESULT GSTMediaSourceActivate::Initialize()
     RETURN_IF_FAILED(SetGUID(MFT_TRANSFORM_CLSID_Attribute, CLSID_GSTVirtualCamera));
     RETURN_IF_FAILED(MFCreateAttributes(&m_spActivateAttributes, 1));
     RETURN_IF_FAILED(m_spActivateAttributes->SetUINT32(MF_VIRTUALCAMERA_PROVIDE_ASSOCIATED_CAMERA_SOURCES, 1));
-    //RETURN_IF_FAILED(_mediaSource->Initialize(this));
+    RETURN_IF_FAILED(_mediaSource->Initialize(this));
     return S_OK;
 }
 
 // Implement QueryInterface, AddRef, and Release
 STDMETHODIMP GSTMediaSourceActivate::QueryInterface(REFIID riid, void** ppv)
 {
+    printf("GSTMediaSourceActivate::QueryInterface(...)\n");
     if (riid == __uuidof(IMFActivate) || riid == __uuidof(IUnknown))
     {
         *ppv = static_cast<IMFActivate*>(this);
@@ -38,6 +39,7 @@ STDMETHODIMP_(ULONG) GSTMediaSourceActivate::Release()
 
 STDMETHODIMP GSTMediaSourceActivate::ActivateObject(REFIID riid, void** ppv)
 {
+    printf("GSTMediaSourceActivate::ActivateObject(...)\n");
     if (riid == __uuidof(IMFMediaSource))
     {
         return _mediaSource.CopyTo(reinterpret_cast<IMFMediaSource**>(ppv));

@@ -20,13 +20,14 @@ private:
     IMFMediaEventQueue* _eventQueue;
     IMFAttributes* _attributes;
     IMFMediaType* _mediaType;
+    IMFMediaSource* _source;
     std::queue<ComPtr<IMFSample>> _sampleQueue;
     bool _isActive;
 
 public:
-    GSTMediaStream() : _refCount(1), _eventQueue(nullptr), _attributes(nullptr), _mediaType(nullptr), _isActive(false)
+	GSTMediaStream() : _refCount(1), _eventQueue(nullptr), _attributes(nullptr), _mediaType(nullptr), _isActive(false), _source(nullptr)
     {
-        g_print("GSTMediaStream::GSTMediaStream()");
+        g_print("GSTMediaStream::GSTMediaStream()\n");
         MFCreateEventQueue(&_eventQueue);
     }
 
@@ -35,6 +36,13 @@ public:
         if (_eventQueue) _eventQueue->Shutdown();
         if (_attributes) _attributes->Release();
         if (_mediaType) _mediaType->Release();
+    }
+
+    HRESULT Initialize(IMFMediaSource* source)
+    {
+        g_print("GSTMediaStream::Initialize()\n");
+		_source = source;
+		return S_OK;
     }
 
     // IUnknown Implementation
@@ -87,16 +95,21 @@ public:
     // IMFMediaStream2 Implementation
     HRESULT STDMETHODCALLTYPE GetMediaSource(IMFMediaSource** ppMediaSource) override
     {
-        return MF_E_NOT_AVAILABLE;  //MF_E_NOT_IMPLEMENTED; // Implement if needed
+        g_print("GSTMediaStream::GetMediaSource(...)\n");
+		//return _source->QueryInterface(IID_PPV_ARGS(ppMediaSource));
+        *ppMediaSource = _source;
+        return S_OK;
     }
 
     HRESULT STDMETHODCALLTYPE GetStreamDescriptor(IMFStreamDescriptor** ppStreamDescriptor) override
     {
+        g_print("GSTMediaStream::GetStreamDescriptor(...)\n");
         return MF_E_NOT_AVAILABLE;  //MF_E_NOT_IMPLEMENTED; // Implement if needed
     }
 
     HRESULT STDMETHODCALLTYPE RequestSample(IUnknown* pToken) override
     {
+        g_print("GSTMediaStream::RequestSample(...)\n");
         if (_sampleQueue.empty())
             return MF_E_NO_MORE_TYPES;
 
@@ -113,6 +126,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE SetStreamState(MF_STREAM_STATE state) override
     {
+        g_print("GSTMediaStream::SetStreamState(...)\n");
         if (state == MF_STREAM_STATE_RUNNING)
         {
             _isActive = true;
@@ -135,6 +149,7 @@ public:
 
     HRESULT ProcessSample(IMFSample* pSample)
     {
+        g_print("GSTMediaStream::ProcessSample(...)\n");
         if (!_isActive || !pSample)
             return MF_E_INVALIDREQUEST;
 
