@@ -57,10 +57,23 @@ HRESULT __stdcall DllGetClassObject(GUID const& clsid, GUID const& iid, void** r
 // DLL registration
 STDAPI DllRegisterServer()
 {
+    // [HKEY_LOCAL_MACHINE\SOFTWARE\Classes\CLSID\{CBA38424-2226-419C-9705-60D59BE792D3}\InprocServer32]
+    //  @ = "C:\\Dev\\WindowsWDK\\gst-camera\\x64\\Debug\\mf_camera.dll"
+    //    "ThreadingModel" = "Both"
+
     printf("Call to DllRegisterServer(....).\n");
+
     // Register the virtual camera with Windows
     auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
     std::wstring path = L"Software\\Classes\\CLSID\\" + clsid + L"\\InprocServer32";
+
+    // Get the module path
+    wchar_t szModulePath[MAX_PATH];
+    if (GetModuleFileName(_hModule, szModulePath, MAX_PATH) == 0)
+    {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+
     HKEY hKey;
     LONG lResult;
 
@@ -83,50 +96,26 @@ STDAPI DllRegisterServer()
     }
 
     // Set registry values
-    DWORD vcamType = (DWORD)MFVirtualCameraType_SoftwareCameraSource;
-    lResult = RegSetValueEx(hKey, L"Type", 0, REG_DWORD, (BYTE*)&vcamType, sizeof(DWORD));
+
+    // Set the default value to the module path
+    lResult = RegSetValueEx(hKey, NULL, 0, REG_SZ, (BYTE*)szModulePath, (DWORD)((wcslen(szModulePath) + 1) * sizeof(wchar_t)));
     if (lResult != ERROR_SUCCESS)
     {
         RegCloseKey(hKey);
         return HRESULT_FROM_WIN32(lResult);
     }
 
-    wchar_t szModulePath[MAX_PATH];
-    if (GetModuleFileName(NULL, szModulePath, MAX_PATH) == 0)
+    // Set the ThreadingModel value to "Both"
+    lResult = RegSetValueEx(hKey, L"ThreadingModel", 0, REG_SZ, (BYTE*)L"Both", (DWORD)(wcslen(L"Both") + 1) * sizeof(wchar_t));
+    if (lResult != ERROR_SUCCESS)
     {
         RegCloseKey(hKey);
-        return HRESULT_FROM_WIN32(GetLastError());
+        return HRESULT_FROM_WIN32(lResult);
     }
 
-    // Store the DLL path
-    lResult = RegSetValueEx(hKey, L"DllPath", 0, REG_SZ, (BYTE*)szModulePath, (DWORD)((wcslen(szModulePath) + 1) * sizeof(wchar_t)));
     RegCloseKey(hKey);
-
-    return HRESULT_FROM_WIN32(lResult);
+    return S_OK;
 }
-
-//STDAPI DllRegisterServer()
-//{
-//    printf("Call to DllRegisterServer(....).\n");
-//    auto clsid = GUID_ToStringW(CLSID_GSTVirtualCamera);
-//    std::wstring path = L"Software\\Classes\\CLSID\\" + clsid + L"\\InprocServer32";
-//
-//    wchar_t szModulePath[MAX_PATH];
-//    if (GetModuleFileName(NULL, szModulePath, MAX_PATH) == 0)
-//    {
-//        RegCloseKey(hKey);
-//        return HRESULT_FROM_WIN32(GetLastError());
-//    }
-//
-//
-//    // note: a vcam *must* be registered in HKEY_LOCAL_MACHINE
-//    // for the frame server to be able to talk with it.
-//    registry_key key;
-//    RETURN_IF_WIN32_ERROR(RegWriteKey(HKEY_LOCAL_MACHINE, path.c_str(), key.put()));
-//    RETURN_IF_WIN32_ERROR(RegWriteValue(key.get(), nullptr, exePath));
-//    RETURN_IF_WIN32_ERROR(RegWriteValue(key.get(), L"ThreadingModel", L"Both"));
-//    return S_OK;
-//}
 
 STDAPI DllUnregisterServer()
 {
