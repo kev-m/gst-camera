@@ -33,6 +33,9 @@ Right now, the code does not work.
 2. The virtual camera does not get registered properly.
 3. The virtual camera is not available to other applications.
 
+*Full Disclosure:* I have no practical experience with WMF! I'm relying on online help, tutorials and gut instinct. 
+Gemini, DeepSeek, ChatGPT, Copilot, etc seem to be completely out of date and their input is worse than useless.
+
 ## Questions
 
 1. When is the most appropriate place in the gstreamer life-cycle to register the virtual camera?
