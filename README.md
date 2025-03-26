@@ -13,7 +13,7 @@ creating a software camera that can be discovered and used by apps as if it was 
 [GStreamer]([url](https://gstreamer.freedesktop.org/)) is a fantastic mdeia processing framework that supports constructing arbitrary pipelines to achieve a variety of tasks.
 
 My idea is to create a virtual camera from a gstreamer pipeline:
-```bash
+```DOS
 C:> gst-launch-1.0.exe mfvideosrc ! "video/x-raw, format=NV12, width=800, height=600, framerate=30/1" ! queue ! mf_camera
 ```
 
